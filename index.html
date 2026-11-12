@@ -105,11 +105,21 @@ let plan=JSON.parse(localStorage.getItem(PLAN)||"{}");
 let activeCategory="";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function safeHttpUrl(value){
+  try {
+    const u = new URL(String(value || "").trim());
+    return (u.protocol === "https:" || u.protocol === "http:") ? u.href : "";
+  } catch {
+    return "";
+  }
+} 
 function save(){localStorage.setItem(KEY,JSON.stringify(recipes));localStorage.setItem(PLAN,JSON.stringify(plan));}
 function showView(id){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.view===id));window.scrollTo(0,0);render();}
 document.querySelectorAll(".navbtn").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view)));
 function catIcon(name){return (CATS.find(c=>c[0]===name)||["","🍲"])[1]}
-function card(r){return `<article class="recipe"><div class="photo">${r.image?`<img src="${esc(r.image)}" alt="" onerror="this.parentNode.textContent='${catIcon(r.category)}'">`:catIcon(r.category)}</div><div class="recipe-body"><h3>${esc(r.title)}</h3><div class="recipe-meta">${esc(r.category)}${r.duration?" · "+esc(r.duration):""}</div><div class="recipe-actions"><button class="btn secondary" onclick="openRecipe('${r.id}')">Voir la recette</button><button class="heart" aria-label="Favori" onclick="toggleFav('${r.id}')">${r.favorite?"♥":"♡"}</button></div></div></article>`}
+function card(r){const imageUrl=safeHttpUrl(r.image);
+return `<article class="recipe"><div class="photo">${imageUrl?`<img src="${esc(imageUrl)}" alt="" onerror="this.parentNode.textContent='${catIcon(r.category)}'">`:catIcon(r.category)}</div><div class="recipe-body"><h3>${esc(r.title)}</h3><div class="recipe-meta">${esc(r.category)}${r.duration?" · "+esc(r.duration):""}</div><div class="recipe-actions"><button class="btn secondary" onclick="openRecipe('${r.id}')">Voir la recette</button><button class="heart" aria-label="Favori" onclick="toggleFav('${r.id}')">${r.favorite?"♥":"♡"}</button></div></div></article>`}
+}
 function list(el,arr){$(el).innerHTML=arr.length?arr.map(card).join(""):`<div class="empty" style="grid-column:1/-1">Aucune recette ici pour le moment.<br>Ajoute ta première recette avec le bouton « Ajouter ».</div>`}
 function render(){
   $("categories").innerHTML=CATS.map(c=>`<button class="cat" onclick="filterCategory('${c[0]}')"><span>${c[1]}</span>${c[0]}</button>`).join("");
@@ -125,10 +135,62 @@ function render(){
 function filterCategory(c){activeCategory=c;showView("recipes");}
 $("searchHome").addEventListener("input",render);$("searchAll").addEventListener("input",render);
 function toggleFav(id){const r=recipes.find(x=>x.id===id);if(r){r.favorite=!r.favorite;save();render();}}
-function openRecipe(id){const r=recipes.find(x=>x.id===id);if(!r)return;showView("detail");$("detailContent").innerHTML=`<button class="btn ghost" onclick="showView('recipes')">← Retour</button><h2>${esc(r.title)}</h2><div class="small">${esc(r.category)} ${r.duration?"· "+esc(r.duration):""}</div>${r.image?`<img src="${esc(r.image)}" style="width:100%;max-height:260px;object-fit:cover;border-radius:14px;margin-top:12px">`:""}<h3>Ingrédients</h3><p>${esc(r.ingredients||"Non renseignés")}</p><h3>Préparation</h3><p>${esc(r.steps||"Consulte le site d'origine pour les étapes.")}</p>${r.url?`<p><a href="${esc(r.url)}" target="_blank" rel="noopener">Ouvrir la recette sur le site d'origine ↗</a></p>`:""}<div class="form-actions"><button class="btn secondary" onclick="toggleFav('${r.id}');openRecipe('${r.id}')">${r.favorite?"Retirer des favoris":"Ajouter aux favoris"}</button><button class="btn secondary" onclick="deleteRecipe('${r.id}')">Supprimer</button></div>`;}
+function openRecipe(id){
+  const r=recipes.find(x=>x.id===id);
+  if(!r)return;
+  const imageUrl=safeHttpUrl(r.image);
+  const recipeUrl=safeHttpUrl(r.url);
+  showView("detail");
+  $("detailContent").innerHTML=`
+    <button class="btn ghost" onclick="showView('recipes')">← Retour</button>
+    <h2>${esc(r.title)}</h2>
+    <div class="small">${esc(r.category)} ${r.duration?"· "+esc(r.duration):""}</div>
+    ${imageUrl?`<img src="${esc(imageUrl)}" alt="" style="width:100%;max-height:260px;object-fit:cover;border-radius:14px;margin-top:12px">`:""}
+    <h3>Ingrédients</h3>
+    <p>${esc(r.ingredients||"Non renseignés")}</p>
+    <h3>Préparation</h3>
+    <p>${esc(r.steps||"Consulte le site d'origine pour les étapes.")}</p>
+    ${recipeUrl?`<p><a href="${esc(recipeUrl)}" target="_blank" rel="noopener noreferrer">Ouvrir la recette sur le site d'origine ↗</a></p>`:""}
+    <div class="form-actions">
+      <button class="btn secondary" onclick="toggleFav('${r.id}');openRecipe('${r.id}')">${r.favorite?"Retirer des favoris":"Ajouter aux favoris"}</button>
+      <button class="btn secondary" onclick="deleteRecipe('${r.id}')">Supprimer</button>
+    </div>`;
+}
 function deleteRecipe(id){if(confirm("Supprimer cette recette ?")){recipes=recipes.filter(r=>r.id!==id);Object.keys(plan).forEach(d=>{if(plan[d]===id)delete plan[d]});save();showView("recipes");}}
 $("category").innerHTML=CATS.map(c=>`<option>${c[0]}</option>`).join("");
-$("recipeForm").addEventListener("submit",e=>{e.preventDefault();const r={id:Date.now().toString(),title:$("title").value.trim(),url:$("url").value.trim(),image:$("image").value.trim(),category:$("category").value,duration:$("duration").value.trim(),ingredients:$("ingredients").value.trim(),steps:$("steps").value.trim(),favorite:false};recipes.push(r);save();e.target.reset();showView("recipes");});
+$("recipeForm").addEventListener("submit",e=>{
+  e.preventDefault();
+
+  const recipeUrl=safeHttpUrl($("url").value);
+  const imageUrl=safeHttpUrl($("image").value);
+
+  if($("url").value.trim() && !recipeUrl){
+    alert("Le lien de la recette doit être une adresse HTTP ou HTTPS valide.");
+    return;
+  }
+
+  if($("image").value.trim() && !imageUrl){
+    alert("Le lien de la photo doit être une adresse HTTP ou HTTPS valide.");
+    return;
+  }
+
+  const r={
+    id:Date.now().toString(),
+    title:$("title").value.trim(),
+    url:recipeUrl,
+    image:imageUrl,
+    category:$("category").value,
+    duration:$("duration").value.trim(),
+    ingredients:$("ingredients").value.trim(),
+    steps:$("steps").value.trim(),
+    favorite:false
+  };
+
+  recipes.push(r);
+  save();
+  e.target.reset();
+  showView("recipes");
+});
 function renderPlan(){$("week").innerHTML=DAYS.map(d=>`<div class="day"><strong>${d}</strong><select onchange="setPlan('${d}',this.value)"><option value="">— Choisir —</option>${recipes.map(r=>`<option value="${r.id}" ${plan[d]===r.id?"selected":""}>${esc(r.title)}</option>`).join("")}</select>${plan[d]&&!recipes.some(r=>r.id===plan[d])?'<div class="small">Recette indisponible</div>':""}</div>`).join("");}
 function setPlan(day,id){if(id)plan[day]=id;else delete plan[day];save();}
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}
