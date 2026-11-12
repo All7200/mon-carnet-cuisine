@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#a85f43">
+  <meta name="description" content="Ton carnet personnel pour enregistrer, classer et planifier tes recettes.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <title>Mon Carnet de Cuisine</title>
+  <style>
+    :root{--cream:#f7f2e9;--paper:#fffdf8;--ink:#49372e;--muted:#83766d;--terra:#a85f43;--sage:#74836b;--line:#e8ded1;--shadow:0 8px 28px #49372e12}
+    *{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+    button,input,select,textarea{font:inherit}button{cursor:pointer}
+    .app{max-width:980px;margin:auto;min-height:100vh;padding-bottom:92px}
+    header{padding:26px 20px 18px;background:linear-gradient(135deg,#f3e7d8,#f9f4eb)}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-family:Georgia,serif;font-size:clamp(25px,5vw,36px);font-weight:700;letter-spacing:-.7px}.sub{color:var(--muted);margin-top:4px}
+    .mark{width:48px;height:48px;border-radius:16px;background:var(--terra);display:grid;place-items:center;color:white;font-size:25px;box-shadow:var(--shadow)}
+    main{padding:18px 16px}.search{width:100%;padding:14px 16px;border:1px solid var(--line);border-radius:15px;background:var(--paper);outline:none}
+    .section-head{display:flex;justify-content:space-between;align-items:center;margin:22px 2px 12px;gap:10px}.section-head h2{font:700 22px Georgia,serif;margin:0}.small{font-size:13px;color:var(--muted)}
+    .cats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.cat{border:1px solid var(--line);background:var(--paper);border-radius:14px;padding:13px 6px;color:var(--ink);font-weight:600}.cat span{display:block;font-size:24px;margin-bottom:4px}
+    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.recipe{background:var(--paper);border:1px solid var(--line);border-radius:17px;overflow:hidden;box-shadow:var(--shadow)}
+    .photo{height:112px;background:linear-gradient(135deg,#ead9c6,#d8c4ad);display:grid;place-items:center;font-size:42px}.photo img{width:100%;height:100%;object-fit:cover}.recipe-body{padding:11px}.recipe h3{font-size:15px;margin:0 0 5px}.recipe-meta{font-size:12px;color:var(--muted)}.recipe-actions{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+    .heart{border:0;background:transparent;color:var(--terra);font-size:21px;padding:0 4px}.btn{border:0;border-radius:12px;padding:11px 15px;background:var(--terra);color:white;font-weight:650}.btn.secondary{background:#efe4d8;color:var(--ink)}.btn.ghost{background:transparent;color:var(--terra);padding:7px}
+    .empty{padding:28px 16px;text-align:center;color:var(--muted);background:#fffdf8;border:1px dashed var(--line);border-radius:16px}
+    nav{position:fixed;z-index:5;bottom:0;left:0;right:0;background:#fffdf8ed;backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;justify-content:center}
+    .nav-inner{width:min(980px,100%);display:grid;grid-template-columns:repeat(5,1fr);padding:8px 5px calc(8px + env(safe-area-inset-bottom))}
+    .navbtn{border:0;background:transparent;color:var(--muted);font-size:11px;padding:5px 2px}.navbtn b{display:block;font-size:21px;font-weight:500;margin-bottom:2px}.navbtn.active{color:var(--terra);font-weight:700}
+    .view{display:none}.view.active{display:block}
+    .panel{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+    label{display:block;font-weight:650;font-size:14px;margin:12px 0 6px}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:11px;padding:11px;background:white;color:var(--ink)}textarea{min-height:90px;resize:vertical}
+    .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.form-actions{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}
+    .week{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.day{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:11px}.day strong{display:block;margin-bottom:6px}.day select{font-size:13px;padding:8px}
+    .detail h2{font:700 25px Georgia,serif}.detail p{white-space:pre-wrap}.detail a{color:var(--terra);overflow-wrap:anywhere}
+    .notice{background:#f0eadf;border-radius:12px;padding:11px 13px;font-size:13px;color:#66584e;margin:12px 0}
+    @media(min-width:650px){main{padding:24px}.cats{grid-template-columns:repeat(6,1fr)}.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.photo{height:145px}.week{grid-template-columns:repeat(4,1fr)}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="top"><div><div class="brand">Mon Carnet de Cuisine</div><div class="sub">Toutes tes idées gourmandes au même endroit</div></div><div class="mark">♨</div></div>
+  </header>
+  <main>
+    <section id="home" class="view active">
+      <input id="searchHome" class="search" placeholder="⌕  Rechercher une recette ou un ingrédient…" aria-label="Rechercher">
+      <div class="section-head"><h2>Mes catégories</h2><span class="small">À explorer</span></div>
+      <div class="cats" id="categories"></div>
+      <div class="section-head"><h2>Mes recettes</h2><button class="btn ghost" onclick="showView('add')">＋ Ajouter</button></div>
+      <div id="homeRecipes" class="cards"></div>
+    </section>
+
+    <section id="recipes" class="view">
+      <div class="section-head"><h2>Toutes mes recettes</h2><span class="small" id="recipeCount"></span></div>
+      <input id="searchAll" class="search" placeholder="Rechercher…">
+      <div style="height:12px"></div><div id="allRecipes" class="cards"></div>
+    </section>
+
+    <section id="favorites" class="view">
+      <div class="section-head"><h2>Mes favoris ♥</h2></div>
+      <div id="favoriteRecipes" class="cards"></div>
+    </section>
+
+    <section id="planning" class="view">
+      <div class="section-head"><h2>Mon planning de la semaine</h2></div>
+      <p class="small">Choisis une recette pour chaque jour. Tes choix sont enregistrés sur ce téléphone.</p>
+      <div id="week" class="week"></div>
+    </section>
+
+    <section id="add" class="view">
+      <div class="section-head"><h2>Ajouter une recette</h2></div>
+      <div class="panel">
+        <div class="notice">Colle le lien d'un site de cuisine. Le lien sera conservé pour retrouver la recette originale. Selon le site, les détails devront parfois être saisis manuellement.</div>
+        <form id="recipeForm">
+          <label for="title">Nom de la recette *</label><input id="title" required placeholder="Ex. Gratin de courgettes">
+          <label for="url">Lien Internet de la recette</label><input id="url" type="url" placeholder="https://…">
+          <label for="image">Lien d'une photo (facultatif)</label><input id="image" type="url" placeholder="https://…">
+          <div class="formgrid">
+            <div><label for="category">Catégorie</label><select id="category"></select></div>
+            <div><label for="duration">Temps (facultatif)</label><input id="duration" placeholder="Ex. 30 min"></div>
+          </div>
+          <label for="ingredients">Ingrédients</label><textarea id="ingredients" placeholder="Un ingrédient par ligne"></textarea>
+          <label for="steps">Préparation</label><textarea id="steps" placeholder="Décris les étapes de préparation…"></textarea>
+          <div class="form-actions"><button class="btn" type="submit">Enregistrer la recette</button><button class="btn secondary" type="reset">Effacer</button></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="detail" class="view"><div id="detailContent" class="panel detail"></div></section>
+  </main>
+</div>
+<nav><div class="nav-inner">
+  <button class="navbtn active" data-view="home"><b>⌂</b>Accueil</button>
+  <button class="navbtn" data-view="recipes"><b>▤</b>Recettes</button>
+  <button class="navbtn" data-view="favorites"><b>♥</b>Favoris</button>
+  <button class="navbtn" data-view="planning"><b>▦</b>Planning</button>
+  <button class="navbtn" data-view="add"><b>＋</b>Ajouter</button>
+</div></nav>
+<script>
+const CATS=[["Entrées","🥗"],["Plats","🍝"],["Desserts","🍰"],["Apéritifs","🥨"],["Pâtisserie","🧁"],["Autres","🍲"]];
+const DAYS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+const KEY="mcc-recipes-v1", PLAN="mcc-plan-v1";
+let recipes=JSON.parse(localStorage.getItem(KEY)||"[]");
+let plan=JSON.parse(localStorage.getItem(PLAN)||"{}");
+let activeCategory="";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function save(){localStorage.setItem(KEY,JSON.stringify(recipes));localStorage.setItem(PLAN,JSON.stringify(plan));}
+function showView(id){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.view===id));window.scrollTo(0,0);render();}
+document.querySelectorAll(".navbtn").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view)));
+function catIcon(name){return (CATS.find(c=>c[0]===name)||["","🍲"])[1]}
+function card(r){return `<article class="recipe"><div class="photo">${r.image?`<img src="${esc(r.image)}" alt="" onerror="this.parentNode.textContent='${catIcon(r.category)}'">`:catIcon(r.category)}</div><div class="recipe-body"><h3>${esc(r.title)}</h3><div class="recipe-meta">${esc(r.category)}${r.duration?" · "+esc(r.duration):""}</div><div class="recipe-actions"><button class="btn secondary" onclick="openRecipe('${r.id}')">Voir la recette</button><button class="heart" aria-label="Favori" onclick="toggleFav('${r.id}')">${r.favorite?"♥":"♡"}</button></div></div></article>`}
+function list(el,arr){$(el).innerHTML=arr.length?arr.map(card).join(""):`<div class="empty" style="grid-column:1/-1">Aucune recette ici pour le moment.<br>Ajoute ta première recette avec le bouton « Ajouter ».</div>`}
+function render(){
+  $("categories").innerHTML=CATS.map(c=>`<button class="cat" onclick="filterCategory('${c[0]}')"><span>${c[1]}</span>${c[0]}</button>`).join("");
+  const q=($("searchHome").value||"").toLowerCase();
+  list("homeRecipes",recipes.filter(r=>(r.title+" "+r.ingredients+" "+r.category).toLowerCase().includes(q)).slice().reverse());
+  const q2=($("searchAll").value||"").toLowerCase();
+  let all=recipes.filter(r=>(r.title+" "+r.ingredients+" "+r.category).toLowerCase().includes(q2));
+  if(activeCategory) all=all.filter(r=>r.category===activeCategory);
+  $("recipeCount").textContent=all.length+" recette(s)";
+  list("allRecipes",all.slice().reverse());list("favoriteRecipes",recipes.filter(r=>r.favorite).slice().reverse());
+  renderPlan();
+}
+function filterCategory(c){activeCategory=c;showView("recipes");}
+$("searchHome").addEventListener("input",render);$("searchAll").addEventListener("input",render);
+function toggleFav(id){const r=recipes.find(x=>x.id===id);if(r){r.favorite=!r.favorite;save();render();}}
+function openRecipe(id){const r=recipes.find(x=>x.id===id);if(!r)return;showView("detail");$("detailContent").innerHTML=`<button class="btn ghost" onclick="showView('recipes')">← Retour</button><h2>${esc(r.title)}</h2><div class="small">${esc(r.category)} ${r.duration?"· "+esc(r.duration):""}</div>${r.image?`<img src="${esc(r.image)}" style="width:100%;max-height:260px;object-fit:cover;border-radius:14px;margin-top:12px">`:""}<h3>Ingrédients</h3><p>${esc(r.ingredients||"Non renseignés")}</p><h3>Préparation</h3><p>${esc(r.steps||"Consulte le site d'origine pour les étapes.")}</p>${r.url?`<p><a href="${esc(r.url)}" target="_blank" rel="noopener">Ouvrir la recette sur le site d'origine ↗</a></p>`:""}<div class="form-actions"><button class="btn secondary" onclick="toggleFav('${r.id}');openRecipe('${r.id}')">${r.favorite?"Retirer des favoris":"Ajouter aux favoris"}</button><button class="btn secondary" onclick="deleteRecipe('${r.id}')">Supprimer</button></div>`;}
+function deleteRecipe(id){if(confirm("Supprimer cette recette ?")){recipes=recipes.filter(r=>r.id!==id);Object.keys(plan).forEach(d=>{if(plan[d]===id)delete plan[d]});save();showView("recipes");}}
+$("category").innerHTML=CATS.map(c=>`<option>${c[0]}</option>`).join("");
+$("recipeForm").addEventListener("submit",e=>{e.preventDefault();const r={id:Date.now().toString(),title:$("title").value.trim(),url:$("url").value.trim(),image:$("image").value.trim(),category:$("category").value,duration:$("duration").value.trim(),ingredients:$("ingredients").value.trim(),steps:$("steps").value.trim(),favorite:false};recipes.push(r);save();e.target.reset();showView("recipes");});
+function renderPlan(){$("week").innerHTML=DAYS.map(d=>`<div class="day"><strong>${d}</strong><select onchange="setPlan('${d}',this.value)"><option value="">— Choisir —</option>${recipes.map(r=>`<option value="${r.id}" ${plan[d]===r.id?"selected":""}>${esc(r.title)}</option>`).join("")}</select>${plan[d]&&!recipes.some(r=>r.id===plan[d])?'<div class="small">Recette indisponible</div>':""}</div>`).join("");}
+function setPlan(day,id){if(id)plan[day]=id;else delete plan[day];save();}
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));}
+render();
+</script>
+</body>
+</html>
