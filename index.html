@@ -48,7 +48,17 @@
       <div class="cats" id="categories"></div>
       <div class="section-head"><h2>Mes recettes</h2><button class="btn ghost" onclick="showView('add')">＋ Ajouter</button></div>
       <div id="homeRecipes" class="cards"></div>
-    </section>
+
+<div class="section-head" style="margin-top:25px">
+  <h2>Mes sauvegardes</h2>
+</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 20px">
+  <button class="btn secondary" onclick="exportRecipes()">⬇ Sauvegarder mes recettes</button>
+  <button class="btn secondary" onclick="document.getElementById('importFile').click()">⬆ Restaurer mes recettes</button>
+  <input id="importFile" type="file" accept=".json,application/json" style="display:none" onchange="importRecipes(event)">
+</div>
+      
+</section>
 
     <section id="recipes" class="view">
       <div class="section-head"><h2>Toutes mes recettes</h2><span class="small" id="recipeCount"></span></div>
@@ -106,6 +116,47 @@ let activeCategory="";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function save(){localStorage.setItem(KEY,JSON.stringify(recipes));localStorage.setItem(PLAN,JSON.stringify(plan));}
+  function exportRecipes(){
+  const backup={
+    version:1,
+    date:new Date().toISOString(),
+    recipes:recipes,
+    plan:plan
+  };
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="mon-carnet-cuisine-sauvegarde.json";
+  a.click();
+  URL.revokeObjectURL(url);
+  alert("Sauvegarde téléchargée !");
+}
+
+function importRecipes(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(){
+    try{
+      const data=JSON.parse(reader.result);
+      if(!data||!Array.isArray(data.recipes)||!data.plan||typeof data.plan!=="object"||Array.isArray(data.plan)){
+        throw new Error("Fichier invalide");
+      }
+      if(!confirm("Attention : cette restauration remplacera les recettes et le planning actuels. Continuer ?"))return;
+      recipes=data.recipes;
+      plan=data.plan;
+      save();
+      render();
+      alert("Sauvegarde restaurée !");
+    }catch(error){
+      alert("Fichier de sauvegarde invalide ou illisible.");
+    }finally{
+      event.target.value="";
+    }
+  };
+  reader.readAsText(file);
+}
 function showView(id){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.view===id));window.scrollTo(0,0);render();}
 document.querySelectorAll(".navbtn").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view)));
 function catIcon(name){return (CATS.find(c=>c[0]===name)||["","🍲"])[1]}
